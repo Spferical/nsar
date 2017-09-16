@@ -1,11 +1,16 @@
+from __future__ import print_function
 import cv2
 import os
 import openface
 import pickle
+import sys
+import csv
 
 from flask import Flask, jsonify, request
 from sklearn.svm import SVC
 from sklearn.preprocessing import LabelEncoder
+import pandas as pd
+import numpy as np
 
 
 file_dir = os.path.dirname(os.path.realpath(__file__))
@@ -34,28 +39,50 @@ def root():
 
 
 def get_rep(face_image):
-    bgr_img = cv2.imdecode(face_image)
+    bgr_img = cv2.imdecode(face_image, -1)
     assert bgr_img is not None
     rgb_img = cv2.cvtColor(bgr_img, cv2.COLOR_BGR2RGB)
     bb = align.getLargestFaceBoundingBox(rgb_img)
-    assert bb is not None
+    if bb is None:
+        return None
     aligned_face = align.align(
             img_dim, rgb_img, bb,
             landmarkIndices=openface.AlignDlib.OUTER_EYES_AND_NOSE)
     return net.forward(aligned_face)
 
 
+def read_file(filename):
+    with open(filename, 'r') as f:
+        return f.read()
+
+
+def read_fb_ids_and_names():
+    with open('data/data.txt') as f:
+        return [(int(row[0]), row[1])
+                for row in csv.reader(f)]
+
+
 def train():
-    # TODO: read images, names, IDs, etc
-    raise NotImplementedError()
-    labels = None
-    le = LabelEncoder().fit(labels)
-    num_labels = le.transform(labels)
-    clf = SVC(C=1, kernel='linear', probability=True)
-    clf.fit(embeddings, num_labels)
+    fb_data = read_fb_ids_and_names()
+    fb_ids = [row[0] for row in fb_data]
+    working_fb_ids = []
+    reps = []
+    for fb_id in fb_ids:
+        data = read_file("data/{}.jpg".format(fb_id))
+        np_string = np.fromstring(data, dtype='uint8')
+        rep = get_rep(np_string)
+        if rep is not None:
+            working_fb_ids.append(fb_id)
+            reps.append(rep)
+
+    le = LabelEncoder().fit(working_fb_ids)
+    labels = le.transform(working_fb_ids)
+    clf = SVC(kernel='linear', probability=True)
+    clf.fit(reps, labels)
     fname = "classifier.pkl"
-    with open("classifier.pkl") as f:
+    with open(fname, 'w') as f:
         pickle.dump((le, clf), f)
+    print("Classifier saved to {}".format(fname), file=sys.stderr)
 
 
 def load_model():
@@ -75,4 +102,10 @@ def infer(img, le, clf):
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8000, debug=True)
+    command = sys.argv[1]
+    if command == 'run':
+        app.run(host='0.0.0.0', port=8000, debug=True)
+    elif command == 'train':
+        train()
+    else:
+        print('invalid command {}'.format(sys.argv[1]))

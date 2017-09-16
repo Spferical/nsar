@@ -62,15 +62,19 @@ def read_fb_ids_and_names():
                 for row in csv.reader(f)]
 
 
+def get_rep_from_file(path):
+    data = read_file(path)
+    np_string = np.fromstring(data, dtype='uint8')
+    return get_rep(np_string)
+
+
 def train():
     fb_data = read_fb_ids_and_names()
     fb_ids = [row[0] for row in fb_data]
     working_fb_ids = []
     reps = []
     for fb_id in fb_ids:
-        data = read_file("data/{}.jpg".format(fb_id))
-        np_string = np.fromstring(data, dtype='uint8')
-        rep = get_rep(np_string)
+        rep = get_rep_from_file("data/{}.jpg".format(fb_id))
         if rep is not None:
             working_fb_ids.append(fb_id)
             reps.append(rep)
@@ -91,14 +95,29 @@ def load_model():
     return le, clf
 
 
-def infer(img, le, clf):
-    r = get_rep(img)
-    bbx, rep = (r[0], r[1].reshape(1, -1))
+def infer(rep, le, clf):
+    rep = rep.reshape(1, -1)
     predictions = clf.predict_proba(rep).ravel()
     max_i = np.argmax(predictions)
     person = le.inverse_transform(max_i)
     confidence = predictions[max_i]
     return (person, confidence)
+
+
+def test_infer():
+    fb_data = read_fb_ids_and_names()
+    fb_ids = [row[0] for row in fb_data]
+    le, clf = load_model()
+    num_correct = 0
+    for fb_id in fb_ids:
+        image_path = "data/{}.jpg".format(fb_id)
+        rep = get_rep_from_file(image_path)
+        if rep is not None:
+            person, confidence = infer(rep, le, clf)
+            print(person, confidence)
+            if person == fb_id:
+                num_correct += 1
+    print("Infer test: {} correct out of {}".format(num_correct, len(fb_ids)))
 
 
 if __name__ == '__main__':
@@ -107,5 +126,7 @@ if __name__ == '__main__':
         app.run(host='0.0.0.0', port=8000, debug=True)
     elif command == 'train':
         train()
+    elif command == 'test_infer':
+        test_infer()
     else:
         print('invalid command {}'.format(sys.argv[1]))

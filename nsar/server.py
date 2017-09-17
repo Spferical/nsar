@@ -25,10 +25,8 @@ def root():
     data = request.body.read()
     assert data
     data = base64.b64decode(data)
-    print(data)
     width = int.from_bytes(data[-8:-4], byteorder='little')
     height = int.from_bytes(data[-4:], byteorder='little')
-    print(width, height)
     fd, yuv_path = tempfile.mkstemp(prefix='nsar', suffix='.yuv')
     os.close(fd)
     with open(yuv_path, "wb") as f:
@@ -38,10 +36,9 @@ def root():
     faces = recog.recognize(bmp_path)
     name = faces[0]['name'] if faces else 'Anonymous'
     print(name)
-    os.remove(bmp_path)
     os.remove(yuv_path)
 
-    return {"name": name}
+    return name
 
 
 if __name__ == '__main__':

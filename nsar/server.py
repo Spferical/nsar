@@ -36,6 +36,7 @@ def root():
     os.system("convert -size {}x{} -colorspace YUV {} {}".format(width, height, yuv_path, bmp_path))
     faces = recog.recognize(bmp_path)
     name = faces[0]['name'] if faces else 'Anonymous'
+    print(name)
 
     return {"name": name}
 

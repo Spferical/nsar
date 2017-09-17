@@ -25,13 +25,14 @@ def root():
     data = request.body.read()
     assert data
     data = base64.b64decode(data)
-    width = int.from_bytes(data[0:4], byteorder='little')
-    height = int.from_bytes(data[4:8], byteorder='little')
+    print(data)
+    width = int.from_bytes(data[-8:-4], byteorder='little')
+    height = int.from_bytes(data[-4:], byteorder='little')
     print(width, height)
     fd, yuv_path = tempfile.mkstemp(prefix='nsar', suffix='.yuv')
     os.close(fd)
     with open(yuv_path, "wb") as f:
-        f.write(data[8:])
+        f.write(data[:-8])
     bmp_path = yuv_path.split('.')[0] + '.png'
     os.system("convert -size {}x{} -depth 8 {} {}".format(width, height, yuv_path, bmp_path))
     faces = recog.recognize(bmp_path)

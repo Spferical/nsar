@@ -32,11 +32,9 @@ def root():
     fd, path = tempfile.mkstemp(prefix='nsar', suffix='.png')
     os.close(fd)
     img.save(path)
-    print(recog.recognize(path))
+    faces = recog.recognize(path)
     os.remove(path)
-
-    #TODO: everything
-    name = 'Anonymous'
+    name = faces[0]['name'] if faces else 'Anonymous'
 
     return {name: name}
 

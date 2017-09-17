@@ -37,6 +37,8 @@ def root():
     faces = recog.recognize(bmp_path)
     name = faces[0]['name'] if faces else 'Anonymous'
     print(name)
+    os.remove(bmp_path)
+    os.remove(yuv_path)
 
     return {"name": name}
 

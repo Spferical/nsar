@@ -1,4 +1,5 @@
 from __future__ import print_function
+from PIL import Image
 import sys
 import os
 import tempfile
@@ -24,11 +25,13 @@ def root():
     print(data)
     assert data
     data = base64.b64decode(data)
+    width = int.from_bytes(data[0:4], byteorder='little')
+    height = int.from_bytes(data[4:8], byteorder='little')
+    img = Image.frombytes('RGB', (width, height), data[8:])
     print(data)
-    fd, path = tempfile.mkstemp(prefix='nsar')
+    fd, path = tempfile.mkstemp(prefix='nsar', suffix='.png')
     os.close(fd)
-    with open(path, "wb") as f:
-        f.write(data)
+    img.save(path)
     print(recog.recognize(path))
     os.remove(path)
 

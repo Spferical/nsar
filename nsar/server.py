@@ -10,6 +10,7 @@ import logging
 import base64
 
 
+stuff = {}
 logging.basicConfig(level=logging.DEBUG)
 fb_token = os.environ["FB_TOKEN"]
 fb_dtsg = os.environ["FB_DTSG_TOKEN"]
@@ -18,6 +19,17 @@ assert fb_token is not None
 assert fb_dtsg is not None
 assert fb_cookie is not None
 recog = FBRecog(fb_token, fb_cookie, fb_dtsg)
+
+with open('../data.txt', 'r') as f:
+    for line in f.readlines():
+        user_stuff = tuple(line.split(','))
+        text = user_stuff[1]
+        if len(user_stuff) >= 3:
+            extras = ''.join(user_stuff[2:])
+            firstfewlines = '\n'.join(extras.split('\t')[:3])
+            text += '\n' + firstfewlines
+
+        stuff[user_stuff[1]] = text
 
 
 @route("/", method='POST')
@@ -35,10 +47,11 @@ def root():
     os.system("convert -size {}x{} -depth 8 {} {}".format(width, height, yuv_path, bmp_path))
     faces = recog.recognize(bmp_path)
     name = faces[0]['name'] if faces else 'Anonymous'
-    print(name)
+    text = stuff.get(name, str(name))
+    print(text)
     os.remove(yuv_path)
 
-    return name
+    return text
 
 
 if __name__ == '__main__':

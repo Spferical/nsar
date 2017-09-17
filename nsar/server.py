@@ -27,8 +27,8 @@ def root():
     print(data)
     fd, path = tempfile.mkstemp(prefix='nsar')
     os.close(fd)
-    with open(path, "w") as f:
-        f.write(str(data))
+    with open(path, "wb") as f:
+        f.write(data)
     print(recog.recognize(path))
     os.remove(path)
 

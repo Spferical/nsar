@@ -33,7 +33,7 @@ def root():
     with open(yuv_path, "wb") as f:
         f.write(data[8:])
     bmp_path = yuv_path.split('.')[0] + '.png'
-    os.system("convert -size {}x{} -colorspace YUV {} {}".format(width, height, yuv_path, bmp_path))
+    os.system("convert -size {}x{} -depth 8 {} {}".format(width, height, yuv_path, bmp_path))
     faces = recog.recognize(bmp_path)
     name = faces[0]['name'] if faces else 'Anonymous'
     print(name)

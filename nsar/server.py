@@ -1,24 +1,46 @@
 from __future__ import print_function
 import sys
-from flask import Flask, jsonify, request
+import os
+import tempfile
+import urllib.parse
+from bottle import route, run, request
+from fbrecog import FBRecog
+import logging
+import base64
+
+logging.basicConfig(level=logging.DEBUG)
+fb_token = os.environ["FB_TOKEN"]
+fb_dtsg = os.environ["FB_DTSG_TOKEN"]
+fb_cookie = os.environ["FB_COOKIE"]
+assert fb_token is not None
+assert fb_dtsg is not None
+assert fb_cookie is not None
+recog = FBRecog(fb_token, fb_cookie, fb_dtsg)
 
 
-app = Flask(__name__)
-
-
-@app.route("/", methods=['POST'])
+@route("/", method='POST')
 def root():
-    f = request.files['face']
+    data = request.body.read()
+    print(data)
+    assert data
+    data = base64.b64decode(data)
+    print(data)
+    fd, path = tempfile.mkstemp(prefix='nsar')
+    os.close(fd)
+    with open(path, "w") as f:
+        f.write(str(data))
+    print(recog.recognize(path))
+    os.remove(path)
 
     #TODO: everything
     name = 'Anonymous'
 
-    return jsonify({name: name})
+    return {name: name}
 
 
 if __name__ == '__main__':
     command = sys.argv[1]
     if command == 'run':
-        app.run(host='0.0.0.0', port=8000, debug=True)
+        run(host='0.0.0.0', port=9999, debug=True)
     else:
         print('invalid command {}'.format(sys.argv[1]))
